@@ -3,5 +3,17 @@
 > npx tsc && node dist/index.js
 
 Server is running at http://localhost:8080
-[NON-OK] GET /non-existent-path - Status: 404
-[NON-OK] GET /non-existent-path - Status: 404
+Reset metrics...
+Server Request Hit!
+Hits: 1
+Server Request Hit!
+Server Request Hit!
+Server Request Hit!
+Hits: 4
+Reset metrics...
+Server Request Hit!
+Hits: 1
+Server Request Hit!
+Server Request Hit!
+Server Request Hit!
+Hits: 4
