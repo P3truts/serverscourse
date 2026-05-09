@@ -1,6 +1,7 @@
 import express from "express";
 import { middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
+/// config
 const app = express();
 const port = 8080;
 app.use(express.static("./app"));
@@ -13,19 +14,85 @@ app.use(middlewareLogResponses);
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });
-app.get("/healthz", middlewareLogResponses, middlewareMetricsInc, handlerReadiness);
-app.get("/metrics", middlewareLogResponses, handlerMetrics);
-app.get("/reset", middlewareLogResponses, handlerResetMetrics);
+app.get("/api/healthz", middlewareLogResponses, middlewareMetricsInc, handlerReadiness);
+app.get("/admin/metrics", middlewareLogResponses, handlerMetrics);
+app.post("/admin/reset", middlewareLogResponses, handlerResetMetrics);
+app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
+/// endpoints
 async function handlerReadiness(req, res) {
     res.set("Content-Type", "text/plain; charset=utf-8");
     res.send("OK");
 }
 async function handlerMetrics(req, res) {
+    res.set("Content-Type", "text/html; charset=utf-8");
     console.log(`Hits: ${config.fileServerHits}`);
-    res.send(`Hits: ${config.fileServerHits}`);
+    res.send(`
+        <html>
+          <body>
+            <h1>Welcome, Chirpy Admin</h1>
+            <p>Chirpy has been visited ${config.fileServerHits} times!</p>
+          </body>
+        </html>
+    `);
 }
 async function handlerResetMetrics(req, res) {
     console.log("Reset metrics...");
     config.fileServerHits = 0;
     res.send("OK");
+}
+async function handlerValidateChirp(req, res) {
+    console.log("Validate chirp...");
+    const body = await readJson(req, res);
+    console.log(`The body is: `);
+    console.log(body);
+    if (body.body.length > 140) {
+        res.status(400);
+        sendResponse(res);
+    }
+    else {
+        res.status(200);
+        sendResponse(res);
+    }
+}
+async function readJson(req, res) {
+    let body = ""; // 1. Initialize
+    return new Promise((resolve, reject) => {
+        // 2. Listen for data events
+        req.on("data", (chunk) => {
+            body += chunk;
+        });
+        // 3. Listen for end events
+        req.on("end", () => {
+            try {
+                const parsedBody = JSON.parse(body);
+                // now you can use `parsedBody` as a JavaScript object
+                console.log(`The parsed body is: `);
+                console.log(parsedBody);
+                resolve(parsedBody);
+            }
+            catch (error) {
+                res.status(400).send("Invalid JSON");
+                reject(error);
+            }
+        });
+        req.on("error", (err) => {
+            reject(err);
+        });
+    });
+}
+async function sendResponse(res) {
+    let respBody;
+    if (res.statusCode === 400) {
+        respBody = {
+            error: "Chirp is too long"
+        };
+    }
+    else {
+        respBody = {
+            valid: true
+        };
+    }
+    res.header("Content-Type", "application/json");
+    const body = JSON.stringify(respBody);
+    res.send(body);
 }
