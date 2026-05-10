@@ -10,6 +10,7 @@ const app = express();
 const port = 8080;
 
 app.use(express.static("./app"));
+app.use(express.json());
 app.use("/app", middlewareMetricsInc);
 app.use("/app", express.static("./src/app"));
 app.use(middlewareLogResponses);
@@ -57,63 +58,23 @@ async function handlerResetMetrics(req: Request, res: Response) {
 
 async function handlerValidateChirp(req: Request, res: Response) {
     console.log("Validate chirp...");
-    const body = await readJson(req, res);
+    const body = req.body;
     // console.log(`The body is: `);
     // console.log(body);
     if (body.body.length > 140) {
         res.status(400);
         sendResponse(res);
     } else {
+        const cleanedBody = cleanBody(body.body);
         res.status(200);
-        sendResponse(res);
+        sendResponse(res, cleanedBody);
     }
 }
 
 
 /// private methods
 
-type requestData = {
-    body: string;
-};
-
-type validatedData = {
-    valid: boolean;
-};
-
-type errorResponse = {
-    error: string;
-};
-
-async function readJson(req: Request, res: Response) {
-    let body = ""; // 1. Initialize
-
-    return new Promise<any>((resolve, reject) => {
-        // 2. Listen for data events
-        req.on("data", (chunk) => {
-            body += chunk;
-        });
-
-        // 3. Listen for end events
-        req.on("end", () => {
-            try {
-                const parsedBody = JSON.parse(body);
-                // now you can use `parsedBody` as a JavaScript object
-                // console.log(`The parsed body is: `);
-                // console.log(parsedBody);
-                resolve(parsedBody);
-            } catch (error) {
-                res.status(400).send("Invalid JSON");
-                reject(error);
-            }
-        });
-
-        req.on("error", (err) => {
-            reject(err);
-        });
-    });
-}
-
-async function sendResponse(res: Response) {
+function sendResponse(res: Response, cleanedBody: string = "") {
     let respBody;
     if (res.statusCode === 400) {
         respBody = {
@@ -121,10 +82,24 @@ async function sendResponse(res: Response) {
         };
     } else {
         respBody = {
-            valid: true
+            cleanedBody: cleanedBody
         };
     }
     res.header("Content-Type", "application/json");
     const body = JSON.stringify(respBody);
     res.send(body);
+}
+
+function cleanBody(body: string) {
+    let bodyWords = body.split(" ");
+    for (const index in bodyWords) {
+        const lowerWord = bodyWords[index].toLowerCase();
+        // console.log(lowerWord);
+        if (lowerWord === "kerfuffle" || lowerWord === "sharbert" || lowerWord === "fornax") {
+            bodyWords[index] = "****";
+            // console.log(bodyWords);
+        }
+    }
+
+    return bodyWords.join(" ");
 }

@@ -4,15 +4,72 @@
 
 Server is running at http://localhost:8080
 Validate chirp...
-The parsed body is: 
-{ body: 'I had something interesting for breakfast' }
 The body is: 
 { body: 'I had something interesting for breakfast' }
+i
+had
+something
+interesting
+for
+breakfast
 Validate chirp...
-The parsed body is: 
+The body is: 
 {
-  body: 'lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+  body: 'I hear Mastodon is better than Chirpy. sharbert I need to migrate',
+  extra: 'this should be ignored'
 }
+i
+hear
+mastodon
+is
+better
+than
+chirpy.
+sharbert
+[
+  'I',        'hear',
+  'Mastodon', 'is',
+  'better',   'than',
+  'Chirpy.',  '****',
+  'I',        'need',
+  'to',       'migrate'
+]
+i
+need
+to
+migrate
+Validate chirp...
+The body is: 
+{ body: 'I really need a kerfuffle to go to bed sooner, Fornax !' }
+i
+really
+need
+a
+kerfuffle
+[
+  'I',      'really',
+  'need',   'a',
+  '****',   'to',
+  'go',     'to',
+  'bed',    'sooner,',
+  'Fornax', '!'
+]
+to
+go
+to
+bed
+sooner,
+fornax
+[
+  'I',    'really',
+  'need', 'a',
+  '****', 'to',
+  'go',   'to',
+  'bed',  'sooner,',
+  '****', '!'
+]
+!
+Validate chirp...
 The body is: 
 {
   body: 'lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
