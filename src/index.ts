@@ -1,7 +1,8 @@
 import express from "express";
 import { Request, Response } from "express";
-import { middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
+import { middlewareErrorHandler, middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
+import { BadRequestError } from "./error.js";
 
 
 /// config
@@ -19,15 +20,19 @@ app.use(middlewareLogResponses);
 //    res.sendFile("src/app/logo.png", { root: "./src/app" });
 //});
 
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-});
-
-
 app.get("/api/healthz", middlewareLogResponses, middlewareMetricsInc, handlerReadiness);
 app.get("/admin/metrics", middlewareLogResponses, handlerMetrics);
 app.post("/admin/reset", middlewareLogResponses, handlerResetMetrics);
-app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
+//app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
+app.post("/api/validate_chirp", (req, res, next) => {
+    Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+})
+
+app.use(middlewareErrorHandler);
+
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+});
 
 
 /// endpoints
@@ -63,7 +68,7 @@ async function handlerValidateChirp(req: Request, res: Response) {
     // console.log(body);
     if (body.body.length > 140) {
         res.status(400);
-        sendResponse(res);
+        throw new BadRequestError("Chirp is too long. Max length is 140");
     } else {
         const cleanedBody = cleanBody(body.body);
         res.status(200);

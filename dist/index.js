@@ -1,6 +1,7 @@
 import express from "express";
-import { middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
+import { middlewareErrorHandler, middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
+import { BadRequestError } from "./error.js";
 /// config
 const app = express();
 const port = 8080;
@@ -12,13 +13,17 @@ app.use(middlewareLogResponses);
 //app.get("/app", (req, res) => {
 //    res.sendFile("src/app/logo.png", { root: "./src/app" });
 //});
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-});
 app.get("/api/healthz", middlewareLogResponses, middlewareMetricsInc, handlerReadiness);
 app.get("/admin/metrics", middlewareLogResponses, handlerMetrics);
 app.post("/admin/reset", middlewareLogResponses, handlerResetMetrics);
-app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
+//app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
+app.post("/api/validate_chirp", (req, res, next) => {
+    Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+});
+app.use(middlewareErrorHandler);
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+});
 /// endpoints
 async function handlerReadiness(req, res) {
     res.set("Content-Type", "text/plain; charset=utf-8");
@@ -44,11 +49,11 @@ async function handlerResetMetrics(req, res) {
 async function handlerValidateChirp(req, res) {
     console.log("Validate chirp...");
     const body = req.body;
-    console.log(`The body is: `);
-    console.log(body);
+    // console.log(`The body is: `);
+    // console.log(body);
     if (body.body.length > 140) {
         res.status(400);
-        sendResponse(res);
+        throw new BadRequestError("Chirp is too long. Max length is 140");
     }
     else {
         const cleanedBody = cleanBody(body.body);
@@ -77,10 +82,10 @@ function cleanBody(body) {
     let bodyWords = body.split(" ");
     for (const index in bodyWords) {
         const lowerWord = bodyWords[index].toLowerCase();
-        console.log(lowerWord);
+        // console.log(lowerWord);
         if (lowerWord === "kerfuffle" || lowerWord === "sharbert" || lowerWord === "fornax") {
             bodyWords[index] = "****";
-            console.log(bodyWords);
+            // console.log(bodyWords);
         }
     }
     return bodyWords.join(" ");
