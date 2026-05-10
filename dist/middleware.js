@@ -10,7 +10,7 @@ export async function middlewareLogResponses(req, res, next) {
 }
 export async function middlewareMetricsInc(req, res, next) {
     console.log("Server Request Hit!");
-    config.fileServerHits++;
+    config.api.fileServerHits++;
     next();
 }
 export async function middlewareErrorHandler(error, req, res, next) {

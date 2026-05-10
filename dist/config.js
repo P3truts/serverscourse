@@ -1,1 +1,24 @@
-export const config = { fileServerHits: 0 };
+await process.loadEnvFile();
+const apiConfig = {
+    fileServerHits: 0
+};
+const migrationConfig = {
+    migrationsFolder: "./src/db"
+};
+const dbConfig = {
+    dbURL: envOrThrow(process.env.DB_URL),
+    migrationConfig: migrationConfig
+};
+export const config = {
+    api: apiConfig,
+    db: dbConfig
+};
+function envOrThrow(key) {
+    // console.log(key);
+    if (!key) {
+        throw Error("Environment key is missing!");
+    }
+    else {
+        return key;
+    }
+}

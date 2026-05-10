@@ -3,9 +3,17 @@ import { Request, Response } from "express";
 import { middlewareErrorHandler, middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
 import { BadRequestError } from "./error.js";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 
 
-/// config
+/// db config
+const migrationClient = postgres(config.db.dbURL, { max: 1 });
+await migrate(drizzle(migrationClient), config.db.migrationConfig);
+
+
+/// api config
 
 const app = express();
 const port = 8080;
@@ -44,12 +52,12 @@ async function handlerReadiness(req: Request, res: Response) {
 
 async function handlerMetrics(req: Request, res: Response) {
     res.set("Content-Type", "text/html; charset=utf-8");
-    console.log(`Hits: ${config.fileServerHits}`);
+    console.log(`Hits: ${config.api.fileServerHits}`);
     res.send(`
         <html>
           <body>
             <h1>Welcome, Chirpy Admin</h1>
-            <p>Chirpy has been visited ${config.fileServerHits} times!</p>
+            <p>Chirpy has been visited ${config.api.fileServerHits} times!</p>
           </body>
         </html>
     `);
@@ -57,7 +65,7 @@ async function handlerMetrics(req: Request, res: Response) {
 
 async function handlerResetMetrics(req: Request, res: Response) {
     console.log("Reset metrics...");
-    config.fileServerHits = 0;
+    config.api.fileServerHits = 0;
     res.send("OK");
 }
 

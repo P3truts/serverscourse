@@ -3,29 +3,3 @@
 > npx tsc && node dist/index.js
 
 Server is running at http://localhost:8080
-Validate chirp...
-BadRequestError: Chirp is too long. Max length is 140
-    at handlerValidateChirp (file:///home/brej/boot/serverscourse/dist/index.js:56:15)
-    at file:///home/brej/boot/serverscourse/dist/index.js:21:21
-    at Layer.handleRequest (/home/brej/boot/serverscourse/node_modules/router/lib/layer.js:152:17)
-    at next (/home/brej/boot/serverscourse/node_modules/router/lib/route.js:157:13)
-    at Route.dispatch (/home/brej/boot/serverscourse/node_modules/router/lib/route.js:117:3)
-    at handle (/home/brej/boot/serverscourse/node_modules/router/index.js:435:11)
-    at Layer.handleRequest (/home/brej/boot/serverscourse/node_modules/router/lib/layer.js:152:17)
-    at /home/brej/boot/serverscourse/node_modules/router/index.js:295:15
-    at processParams (/home/brej/boot/serverscourse/node_modules/router/index.js:582:12)
-    at next (/home/brej/boot/serverscourse/node_modules/router/index.js:291:5)
-[NON-OK] POST /api/validate_chirp - Status: 400
-Validate chirp...
-BadRequestError: Chirp is too long. Max length is 140
-    at handlerValidateChirp (file:///home/brej/boot/serverscourse/dist/index.js:56:15)
-    at file:///home/brej/boot/serverscourse/dist/index.js:21:21
-    at Layer.handleRequest (/home/brej/boot/serverscourse/node_modules/router/lib/layer.js:152:17)
-    at next (/home/brej/boot/serverscourse/node_modules/router/lib/route.js:157:13)
-    at Route.dispatch (/home/brej/boot/serverscourse/node_modules/router/lib/route.js:117:3)
-    at handle (/home/brej/boot/serverscourse/node_modules/router/index.js:435:11)
-    at Layer.handleRequest (/home/brej/boot/serverscourse/node_modules/router/lib/layer.js:152:17)
-    at /home/brej/boot/serverscourse/node_modules/router/index.js:295:15
-    at processParams (/home/brej/boot/serverscourse/node_modules/router/index.js:582:12)
-    at next (/home/brej/boot/serverscourse/node_modules/router/index.js:291:5)
-[NON-OK] POST /api/validate_chirp - Status: 400
