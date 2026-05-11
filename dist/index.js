@@ -1,10 +1,12 @@
 import express from "express";
 import { middlewareErrorHandler, middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
-import { BadRequestError } from "./error.js";
+import { BadRequestError, ForbiddenError } from "./error.js";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { createUser } from "./db/queries/users.js";
+import { truncateTable } from "./db/queries/tables.js";
 /// db config
 const migrationClient = postgres(config.db.dbURL, { max: 1 });
 await migrate(drizzle(migrationClient), config.db.migrationConfig);
@@ -21,10 +23,15 @@ app.use(middlewareLogResponses);
 //});
 app.get("/api/healthz", middlewareLogResponses, middlewareMetricsInc, handlerReadiness);
 app.get("/admin/metrics", middlewareLogResponses, handlerMetrics);
-app.post("/admin/reset", middlewareLogResponses, handlerResetMetrics);
+app.post("/admin/reset", (req, res, next) => {
+    Promise.resolve(handlerResetMetrics(req, res)).catch(next);
+});
 //app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
 app.post("/api/validate_chirp", (req, res, next) => {
     Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+});
+app.post("/api/users", (req, res, next) => {
+    Promise.resolve(handlerCreateUser(req, res)).catch(next);
 });
 app.use(middlewareErrorHandler);
 app.listen(port, () => {
@@ -50,6 +57,10 @@ async function handlerMetrics(req, res) {
 async function handlerResetMetrics(req, res) {
     console.log("Reset metrics...");
     config.api.fileServerHits = 0;
+    if (config.api.platform !== "dev") {
+        throw new ForbiddenError("Not allowed!");
+    }
+    await truncateTable("users");
     res.send("OK");
 }
 async function handlerValidateChirp(req, res) {
@@ -61,27 +72,26 @@ async function handlerValidateChirp(req, res) {
         res.status(400);
         throw new BadRequestError("Chirp is too long. Max length is 140");
     }
-    else {
-        const cleanedBody = cleanBody(body.body);
-        res.status(200);
-        sendResponse(res, cleanedBody);
+    const cleanedBody = { cleanedBody: cleanBody(body.body) };
+    res.status(200);
+    sendResponse(res, cleanedBody);
+}
+async function handlerCreateUser(req, res) {
+    console.log("Create user...");
+    const body = req.body;
+    // console.log(body);
+    if (!body.email) {
+        res.status(400);
+        throw new BadRequestError("Email is missing!");
     }
+    const newUser = await createUser(body);
+    res.status(201);
+    sendResponse(res, newUser);
 }
 /// private methods
-function sendResponse(res, cleanedBody = "") {
-    let respBody;
-    if (res.statusCode === 400) {
-        respBody = {
-            error: "Chirp is too long"
-        };
-    }
-    else {
-        respBody = {
-            cleanedBody: cleanedBody
-        };
-    }
+function sendResponse(res, resBody = {}) {
     res.header("Content-Type", "application/json");
-    const body = JSON.stringify(respBody);
+    const body = JSON.stringify(resBody);
     res.send(body);
 }
 function cleanBody(body) {

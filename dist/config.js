@@ -1,6 +1,7 @@
-await process.loadEnvFile();
+process.loadEnvFile();
 const apiConfig = {
-    fileServerHits: 0
+    fileServerHits: 0,
+    platform: envOrThrow(process.env.PLATFORM)
 };
 const migrationConfig = {
     migrationsFolder: "./src/db"

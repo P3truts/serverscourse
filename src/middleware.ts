@@ -4,7 +4,7 @@ import { BadRequestError } from "./error.js";
 
 export async function middlewareLogResponses(req: Request, res: Response, next: Function) {
     res.on("finish", () => {
-        if (res.statusCode !== 200) {
+        if (res.statusCode !== 200 && res.statusCode !== 201) {
             console.log(`[NON-OK] ${req.method} ${req.url} - Status: ${res.statusCode}`);
         }
     });

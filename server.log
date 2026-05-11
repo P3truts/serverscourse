@@ -2,4 +2,28 @@
 > serverscourse@1.0.0 dev
 > npx tsc && node dist/index.js
 
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42P06',
+  message: 'schema "drizzle" already exists, skipping',
+  file: 'schemacmds.c',
+  line: '132',
+  routine: 'CreateSchemaCommand'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42P07',
+  message: 'relation "__drizzle_migrations" already exists, skipping',
+  file: 'parse_utilcmd.c',
+  line: '207',
+  routine: 'transformCreateStmt'
+}
 Server is running at http://localhost:8080
+Reset metrics...
+Create user...
+Create user...
+Reset metrics...
+Create user...
+Create user...
