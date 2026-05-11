@@ -7,8 +7,9 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { createUser } from "./db/queries/users.js";
-import { NewUser } from "./db/schema.js";
+import { NewChirp, NewUser } from "./db/schema.js";
 import { truncateTable } from "./db/queries/tables.js";
+import { createChirp } from "./db/queries/chirps.js";
 
 
 /// db config
@@ -36,13 +37,13 @@ app.get("/admin/metrics", middlewareLogResponses, handlerMetrics);
 app.post("/admin/reset", (req, res, next) => {
     Promise.resolve(handlerResetMetrics(req, res)).catch(next);
 });
-//app.post("/api/validate_chirp", middlewareLogResponses, handlerValidateChirp);
-app.post("/api/validate_chirp", (req, res, next) => {
-    Promise.resolve(handlerValidateChirp(req, res)).catch(next);
-});
 app.post("/api/users", (req, res, next) => {
     Promise.resolve(handlerCreateUser(req, res)).catch(next);
 });
+app.post("/api/chirps", (req, res, next) => {
+    Promise.resolve(handlerCreateChirp(req, res)).catch(next);
+});
+
 
 app.use(middlewareErrorHandler);
 
@@ -81,19 +82,6 @@ async function handlerResetMetrics(req: Request, res: Response) {
     res.send("OK");
 }
 
-async function handlerValidateChirp(req: Request, res: Response) {
-    console.log("Validate chirp...");
-    const body = req.body;
-    // console.log(`The body is: `);
-    // console.log(body);
-    if (body.body.length > 140) {
-        res.status(400);
-        throw new BadRequestError("Chirp is too long. Max length is 140");
-    }
-    const cleanedBody = { cleanedBody: cleanBody(body.body) };
-    res.status(200);
-    sendResponse(res, cleanedBody);
-}
 
 async function handlerCreateUser(req: Request, res: Response) {
     console.log("Create user...");
@@ -109,12 +97,38 @@ async function handlerCreateUser(req: Request, res: Response) {
 }
 
 
+async function handlerCreateChirp(req: Request, res: Response) {
+    console.log("Create chirp...");
+    const body = req.body;
+    // console.log(body);
+    if (!body.body || !body.userId) {
+        res.status(400);
+        throw new BadRequestError("Email is missing!");
+    }
+    validateChirp(body.body);
+    //console.log(body);
+    const newChirp = await createChirp(body);
+    res.status(201);
+    sendResponse(res, newChirp);
+}
+
+
 /// private methods
 
 function sendResponse(res: Response, resBody: object = {}) {
+    console.log("Send response...");
     res.header("Content-Type", "application/json");
     const body = JSON.stringify(resBody);
     res.send(body);
+}
+
+function validateChirp(body: string) {
+    console.log("Validate chirp...");
+    // console.log(`The body is: `);
+    // console.log(body);
+    if (body.length > 140) {
+        throw new BadRequestError("Chirp is too long. Max length is 140");
+    }
 }
 
 function cleanBody(body: string) {
