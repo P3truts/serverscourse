@@ -1,15 +1,11 @@
-import express from "express";
 import { Request, Response } from "express";
-import { middlewareErrorHandler, middlewareLogResponses, middlewareMetricsInc } from "./middleware.js";
 import { config } from "./config.js";
 import { BadRequestError, ForbiddenError } from "./error.js";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { createUser } from "./db/queries/users.js";
+import { createUser, getUserByEmail } from "./db/queries/users.js";
 import { NewChirp, NewUser } from "./db/schema.js";
 import { truncateTable } from "./db/queries/tables.js";
 import { createChirp, getChirp, getChirps } from "./db/queries/chirps.js";
+import { checkPasswordHash, hashPassword } from "./auth.js";
 
 
 export async function handlerReadiness(req: Request, res: Response) {
@@ -44,13 +40,19 @@ export async function handlerCreateUser(req: Request, res: Response) {
     console.log("Create user...");
     const body = req.body;
     // console.log(body);
-    if (!body.email) {
+    if (!body.email || !body.password) {
         res.status(400);
-        throw new BadRequestError("Email is missing!");
+        throw new BadRequestError("Email or password is missing!");
     }
-    const newUser = await createUser(body);
+    //validatePassword(body.password);
+    const hashedPass = await hashPassword(body.password);
+    // console.log(hashedPass);
+
+    const preUser: NewUser = { email: body.email, hashedPassword: hashedPass };
+    const { hashedPassword, ...safeUser } = await createUser(preUser);
+    // console.log(hashedPassword);
     res.status(201);
-    sendResponse(res, newUser);
+    sendResponse(res, safeUser as UserDTO);
 }
 
 export async function handlerChirps(req: Request, res: Response) {
@@ -70,7 +72,9 @@ export async function handlerCreateChirp(req: Request, res: Response) {
     }
     validateChirp(body.body);
     //console.log(body);
-    const newChirp = await createChirp(body);
+
+    const preChirp: NewChirp = { body: body.body, userId: body.userId };
+    const newChirp: NewChirp = await createChirp(preChirp);
     res.status(201);
     sendResponse(res, newChirp);
 }
@@ -85,6 +89,27 @@ export async function handlerChirp(req: Request, res: Response) {
         res.status(404);
     }
     sendResponse(res, chirp);
+}
+
+export async function handlerLogin(req: Request, res: Response) {
+    console.log("Login user...");
+    const body = req.body;
+    if (!body.email || !body.password) {
+        res.status(400);
+        throw new BadRequestError("Email or password is missing!");
+    }
+    const { hashedPassword, ...safeUser } = await getUserByEmail(body.email);
+    // console.log(hashedPassword);
+    // console.log(body.password);
+    const isValidPassword = await checkPasswordHash(body.password, hashedPassword as string);
+
+    if (isValidPassword) {
+        res.status(200);
+        sendResponse(res, safeUser);
+    } else {
+        res.status(401);
+        sendResponse(res, { error: "Incorrect email or password" })
+    }
 }
 
 
@@ -119,3 +144,21 @@ function cleanBody(body: string) {
 
     return bodyWords.join(" ");
 }
+
+function validatePassword(password: string) {
+    if (password.length < 10) {
+        throw new BadRequestError("Password is too short. Must be minimum 10 characters!");
+    } else if (!([...password].some(char => /[A-Z]/.test(char)))) {
+        throw new BadRequestError("Password must contain at least a capital letter!");
+    } else if (!([...password].some(char => /\d/.test(char)))) {
+        throw new BadRequestError("Password must contain at least a digit!");
+    } else if (!([...password].some(char => /[^a-zA-Z0-9]/.test(char)))) {
+        throw new BadRequestError("Password must contain at least a special character!");
+    }
+}
+
+
+/// types
+
+type UserDTO = Omit<NewUser, "hashedPassword">;
+

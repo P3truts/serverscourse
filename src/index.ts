@@ -4,7 +4,7 @@ import { config } from "./config.js";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { handlerReadiness, handlerChirps, handlerCreateChirp, handlerCreateUser, handlerMetrics, handlerResetMetrics, handlerChirp } from "./handlers.js";
+import { handlerReadiness, handlerChirps, handlerCreateChirp, handlerCreateUser, handlerMetrics, handlerResetMetrics, handlerChirp, handlerLogin } from "./handlers.js";
 
 /// db config
 
@@ -45,6 +45,10 @@ app.get("/api/chirps", middlewareLogResponses, handlerChirps);
 app.get("/api/chirps/:id", middlewareLogResponses, handlerChirp);
 app.post("/api/chirps", (req, res, next) => {
     Promise.resolve(handlerCreateChirp(req, res)).catch(next);
+});
+// login
+app.post("/api/login", (req, res, next) => {
+    Promise.resolve(handlerLogin(req, res)).catch(next);
 });
 
 /// api end config
