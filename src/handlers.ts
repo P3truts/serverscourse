@@ -5,7 +5,7 @@ import { createUser, getUserByEmail } from "./db/queries/users.js";
 import { NewChirp, NewUser } from "./db/schema.js";
 import { truncateTable } from "./db/queries/tables.js";
 import { createChirp, getChirp, getChirps } from "./db/queries/chirps.js";
-import { checkPasswordHash, hashPassword } from "./auth.js";
+import { checkPasswordHash, getBearerToken, hashPassword, makeJWT, validateJWT } from "./auth.js";
 
 
 export async function handlerReadiness(req: Request, res: Response) {
@@ -66,14 +66,16 @@ export async function handlerCreateChirp(req: Request, res: Response) {
     console.log("Create chirp...");
     const body = req.body;
     // console.log(body);
-    if (!body.body || !body.userId) {
+    if (!body.body) {
         res.status(400);
-        throw new BadRequestError("Email is missing!");
+        throw new BadRequestError("Chirp is missing!");
     }
-    validateChirp(body.body);
+
+    const userId = await validateToken(req);
+    validateChirp({ ...body.body, userId: userId });
     //console.log(body);
 
-    const preChirp: NewChirp = { body: body.body, userId: body.userId };
+    const preChirp: NewChirp = { body: body.body, userId: userId };
     const newChirp: NewChirp = await createChirp(preChirp);
     res.status(201);
     sendResponse(res, newChirp);
@@ -104,8 +106,11 @@ export async function handlerLogin(req: Request, res: Response) {
     const isValidPassword = await checkPasswordHash(body.password, hashedPassword as string);
 
     if (isValidPassword) {
+        const isExpiresIn = body.expiresInSeconds ? body.expiresInSeconds : 3600;
+        const expiresInSecs = isExpiresIn <= 3600 ? isExpiresIn : 3600;
+        const JWToken = makeJWT(safeUser.id, expiresInSecs, config.api.JWTSecret);
         res.status(200);
-        sendResponse(res, safeUser);
+        sendResponse(res, { ...safeUser, token: JWToken });
     } else {
         res.status(401);
         sendResponse(res, { error: "Incorrect email or password" })
@@ -157,6 +162,15 @@ function validatePassword(password: string) {
     }
 }
 
+async function validateToken(req: Request) {
+    try {
+        const JWToken = getBearerToken(req);
+        const decodedToken = validateJWT(JWToken, config.api.JWTSecret);
+        return decodedToken;
+    } catch (err) {
+        throw new Error(`Authentication failed with error: ${err}`);
+    }
+}
 
 /// types
 

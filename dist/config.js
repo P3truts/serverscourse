@@ -1,7 +1,8 @@
 process.loadEnvFile();
 const apiConfig = {
     fileServerHits: 0,
-    platform: envOrThrow(process.env.PLATFORM)
+    platform: envOrThrow(process.env.PLATFORM),
+    JWTSecret: envOrThrow(process.env.SECRET),
 };
 const migrationConfig = {
     migrationsFolder: "./src/db"

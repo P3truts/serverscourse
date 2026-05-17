@@ -3,7 +3,7 @@ import { BadRequestError, ForbiddenError } from "./error.js";
 import { createUser, getUserByEmail } from "./db/queries/users.js";
 import { truncateTable } from "./db/queries/tables.js";
 import { createChirp, getChirp, getChirps } from "./db/queries/chirps.js";
-import { checkPasswordHash, hashPassword } from "./auth.js";
+import { checkPasswordHash, getBearerToken, hashPassword, makeJWT, validateJWT } from "./auth.js";
 export async function handlerReadiness(req, res) {
     res.set("Content-Type", "text/plain; charset=utf-8");
     res.send("OK");
@@ -56,13 +56,14 @@ export async function handlerCreateChirp(req, res) {
     console.log("Create chirp...");
     const body = req.body;
     // console.log(body);
-    if (!body.body || !body.userId) {
+    if (!body.body) {
         res.status(400);
-        throw new BadRequestError("Email is missing!");
+        throw new BadRequestError("Chirp is missing!");
     }
-    validateChirp(body.body);
+    const userId = await validateToken(req);
+    validateChirp({ ...body.body, userId: userId });
     //console.log(body);
-    const preChirp = { body: body.body, userId: body.userId };
+    const preChirp = { body: body.body, userId: userId };
     const newChirp = await createChirp(preChirp);
     res.status(201);
     sendResponse(res, newChirp);
@@ -91,8 +92,11 @@ export async function handlerLogin(req, res) {
     // console.log(body.password);
     const isValidPassword = await checkPasswordHash(body.password, hashedPassword);
     if (isValidPassword) {
+        const isExpiresIn = body.expiresInSeconds ? body.expiresInSeconds : 3600;
+        const expiresInSecs = isExpiresIn <= 3600 ? isExpiresIn : 3600;
+        const JWToken = makeJWT(safeUser.id, expiresInSecs, config.api.JWTSecret);
         res.status(200);
-        sendResponse(res, safeUser);
+        sendResponse(res, { ...safeUser, token: JWToken });
     }
     else {
         res.status(401);
@@ -138,5 +142,15 @@ function validatePassword(password) {
     }
     else if (!([...password].some(char => /[^a-zA-Z0-9]/.test(char)))) {
         throw new BadRequestError("Password must contain at least a special character!");
+    }
+}
+async function validateToken(req) {
+    try {
+        const JWToken = getBearerToken(req);
+        const decodedToken = validateJWT(JWToken, config.api.JWTSecret);
+        return decodedToken;
+    }
+    catch (err) {
+        throw new Error(`Authentication failed with error: ${err}`);
     }
 }

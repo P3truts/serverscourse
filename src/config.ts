@@ -5,6 +5,7 @@ process.loadEnvFile();
 type APIConfig = {
     fileServerHits: number;
     platform: string;
+    JWTSecret: string;
 }
 
 type DBConfig = {
@@ -19,7 +20,8 @@ type appConfig = {
 
 const apiConfig: APIConfig = {
     fileServerHits: 0,
-    platform: envOrThrow(process.env.PLATFORM)
+    platform: envOrThrow(process.env.PLATFORM),
+    JWTSecret: envOrThrow(process.env.SECRET),
 }
 
 const migrationConfig: MigrationConfig = {
